@@ -1,9 +1,8 @@
-name: Deploy Streamlit App to EC2
+name: Deploy Streamlit Docker App to EC2
 
 on:
   push:
-    branches:
-      - master  # deploy on push to master
+    branches: [master]
 
 jobs:
   deploy:
@@ -18,14 +17,26 @@ jobs:
         echo "${{ secrets.EC2_KEY }}" | base64 -d > key.pem
         chmod 400 key.pem
 
-    - name: Deploy to EC2
+    - name: Deploy to EC2 and restart Docker in screen
       run: |
         ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          # Clone if not present
+          if [ ! -d "chatbot1" ]; then
+            git clone https://github.com/sudharshandollu/chatbot1.git
+          fi
           cd chatbot1
           git pull origin master
-          source venv/bin/activate
-          pip install -r requirements.txt
-          # Kill any running streamlit processes
-          pkill -f "streamlit"
-          nohup streamlit run app.py --server.port 8501 --server.address 0.0.0.0 > streamlit.log 2>&1 &
+
+          # Kill old Docker container and screen
+          docker stop chatbot || true
+          docker rm chatbot || true
+          screen -S chatbot -X quit || true
+
+          # Rebuild image
+          docker build -t streamlit-chatbot .
+
+          # Start in screen
+          screen -dmS chatbot bash -c '
+            docker run --env-file ~/chatbot1/.env --name chatbot -p 8501:8501 streamlit-chatbot
+          '
         EOF
