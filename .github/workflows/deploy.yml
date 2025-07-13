@@ -1,4 +1,4 @@
-name: Deploy Streamlit Docker App to EC2
+name: Deploy Chatbot to EC2
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     - name: Run tests with pytest
       run: |
         pytest
-        
+
   deploy:
     runs-on: ubuntu-latest
 
