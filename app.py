@@ -67,5 +67,5 @@ try:
             response = chain.run(input_documents=match, question=user_question)
             st.write(response)
 except Exception as ex:
-    st.write("Something went wrong, Please try again later")
+    st.error("You exceeded your current quota, please check your plan and billing details.")
     print("Error", str(ex))
